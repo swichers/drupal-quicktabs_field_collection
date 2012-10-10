@@ -48,7 +48,7 @@ Current maintainers:
 This project has been sponsored by:
 * McMurry
   McMurry is a world-leading, results-focused content marketing firm. We
-  leverage the power of world-class content â€” in the form of the broad
-  categories of video, websites, print and mobile â€” to keep our clientsâ€™ brands
+  leverage the power of world-class content — in the form of the broad
+  categories of video, websites, print and mobile — to keep our clients’ brands
   top of mind with their customers.  Visit http://www.mcmurry.com for more
   information.
