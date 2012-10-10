@@ -1,0 +1,257 @@
+<?php
+/**
+ * @file
+ * Renders a field collection as QuickTabs
+ */
+
+/**
+ * Implements hook_permission().
+ */
+function quicktabs_field_collection_permission() {
+
+  return array(
+    'administer quicktabs_field_collection' => array(
+      'title' => t('Administer QuickTabs Field Collection'),
+      'description' => t('Configure advanced aspects of QuickTabs Field Collection'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_formatter_info().
+ */
+function quicktabs_field_collection_field_formatter_info() {
+
+  $formatters = array();
+
+  if (module_exists('field_collection')) {
+
+    $formatters['field_collection_quicktabs'] = array(
+      'label' => t('QuickTabs'),
+      'field types' => array('field_collection'),
+      'description' => t('Displays a field collection as a QuickTabs instance'),
+      'settings' => array(
+        'tab_field' => NULL,
+        'content_field' => NULL,
+        'content_field_striptags' => FALSE,
+        'classes' => NULL,
+      ),
+    );
+  }
+
+  return $formatters;
+}
+
+/**
+ * Implements hook_field_formatter_settings_form().
+ */
+function quicktabs_field_collection_field_formatter_settings_form($field, $instance, $view_mode, $form, &$form_state) {
+
+  $display = $instance['display'][$view_mode];
+  $settings = $display['settings'];
+
+  $element['tab_field'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Tab Field'),
+    '#required' => TRUE,
+    '#default_value' => $settings['tab_field'],
+    '#description' => t('The name of the field to use as the tab.'),
+  );
+
+  $element['content_field'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Content Field'),
+    '#required' => TRUE,
+    '#default_value' => $settings['content_field'],
+    '#description' => t('The name of the field to use as the tab\'s content.'),
+  );
+
+  $element['content_field_striptags'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Strip Tags from content field'),
+    '#default_value' => $settings['content_field_striptags'],
+    '#description' => t('Strip all HTML tags from the value used for the tab\'s content.'),
+  );
+
+  $element['classes'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Custom Classes'),
+    '#required' => TRUE,
+    '#default_value' => $settings['classes'],
+    '#description' => t('Provide a space delimited list of css classes to use.'),
+  );
+
+  return $element;
+
+}
+
+/**
+ * Implements hook_field_formatter_settings_summary().
+ */
+function quicktabs_field_collection_field_formatter_settings_summary($field, $instance, $view_mode) {
+
+  $display = $instance['display'][$view_mode];
+  $settings = $display['settings'];
+
+  $summary = array();
+
+  $summary[] = t('Tab Field: @field-name', array('@field-name' => $settings['tab_field']));
+  $summary[] = t('Content Field: @field-name', array('@field-name' => $settings['content_field']));
+  $summary[] = t('Strip tags in content: @yes-no',
+                 array('@yes-no' => !empty($settings['content_field_striptags']) ? 'yes' : 'no')
+               );
+
+  if (!empty($settings['classes'])) {
+
+    $summary[] = t('Classes: @classes', array('@classes' => $settings['classes']));
+  }
+
+  return implode('<br />', $summary);
+}
+
+/**
+ * Implements hook_field_formatter_view().
+ */
+function quicktabs_field_collection_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+
+  $element = array();
+  $settings = $display['settings'];
+  $theme_func = 'field_collection_quicktabs_formatter_' . $display['type'];
+
+  switch ($display['type']) {
+
+    case 'field_collection_quicktabs':
+      $new_element = array(
+        '#theme' => $theme_func,
+        '#settings' => $settings,
+      );
+
+
+      foreach ($items as $delta => $item) {
+
+        $entity = entity_load('field_collection_item', array($item['value']));
+        $new_element['#items'][$item['value']] = current($entity);
+      }
+
+      $element[] = $new_element;
+
+      break;
+  }
+
+  return $element;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function quicktabs_field_collection_theme($existing, $type, $theme, $path) {
+
+  return array(
+    'field_collection_quicktabs_formatter_field_collection_quicktabs' => array(
+      'variables' => array(
+                          'items' => NULL,
+                          'settings' => array()
+      ),
+    ),
+  );
+}
+
+/**
+ * A theme function for displaying field collections as QuickTab instances.
+ *
+ * @param array   $variables
+ *   An array of the address and settings
+ *
+ * @return string
+ *   The rendered HTML
+ */
+function theme_field_collection_quicktabs_formatter_field_collection_quicktabs($variables) {
+
+  $items = $variables['items'];
+  $formatter_settings = $variables['settings'];
+
+  if (empty($items)) {
+
+    return NULL;
+  }
+
+  $tabs = array();
+  $weight = 0;
+  foreach ($items as $collection_id => $collection) {
+
+    $tabs[] = array_merge(
+      _quicktabs_field_collection_get_tab_parts($collection, $formatter_settings),
+      array('weight' => $weight++)
+    );
+  }
+
+  $qt_settings = array(
+    'hide_empty_tabs' => TRUE,
+    'ajax' => FALSE,
+    'renderer' => 'quicktabs',
+    'style' => 'nostyle',
+    'options' => array(),
+  );
+
+  $qt = quicktabs_build_quicktabs('field_collection_quicktabs', $qt_settings, $tabs);
+
+  if (!empty($qt['content']) && !empty($formatter_settings['classes'])) {
+
+    $qt['content']['content']['#options']['attributes']['class'] .= $formatter_settings['classes'];
+  }
+
+  return render($qt);
+}
+
+/**
+ * Retrieves the tab title and contents from a field collection entity.
+ *
+ * @param object $collection_entity
+ *   The field collection entity to pull values from
+ *
+ * @return array
+ *   An array with title and contents keys
+ */
+function _quicktabs_field_collection_get_tab_parts($collection_entity, $settings) {
+
+  $label_field_name = $settings['tab_field'];
+  $content_field_name = $settings['content_field'];
+
+  // Retrieve the render array for the tab field.
+  $label_item = field_get_items(
+    'field_collection_item',
+    $collection_entity,
+    $label_field_name
+  );
+
+  $label_value = field_view_value(
+    'field_collection_item',
+    $collection_entity,
+    $label_field_name,
+    $label_item[0],
+    'full'
+  );
+
+  // Retrieve the render array for the content field.
+  $content_item = field_get_items(
+    'field_collection_item',
+    $collection_entity,
+    $content_field_name
+  );
+
+  $content_value = field_view_field(
+    'field_collection_item',
+    $collection_entity,
+    $content_field_name,
+    'full'
+  );
+
+  // Strip HTML tags from content if necessary.
+  $content = ($settings['content_field_striptags']) ?
+    strip_tags(render($content_value)) : render($content_value);
+
+  return array(
+    'title' => decode_entities(render($label_value)),
+    'contents' => array('#markup' => $content),
+  );
+}
