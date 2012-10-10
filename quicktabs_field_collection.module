@@ -197,7 +197,7 @@ function theme_field_collection_quicktabs_formatter_field_collection_quicktabs($
 
   if (!empty($qt['content']) && !empty($formatter_settings['classes'])) {
 
-    $qt['content']['content']['#options']['attributes']['class'] .= $formatter_settings['classes'];
+    $qt['content']['content']['#options']['attributes']['class'] .= ' ' . $formatter_settings['classes'];
   }
 
   return render($qt);
