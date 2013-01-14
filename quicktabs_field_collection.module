@@ -179,6 +179,11 @@ function theme_field_collection_quicktabs_formatter_field_collection_quicktabs($
   $weight = 0;
   foreach ($items as $collection_id => $collection) {
 
+    if (empty($collection)) {
+
+      continue;
+    }
+
     $tabs[] = array_merge(
       _quicktabs_field_collection_get_tab_parts($collection, $formatter_settings),
       array('weight' => $weight++)
