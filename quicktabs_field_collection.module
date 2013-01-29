@@ -50,20 +50,30 @@ function quicktabs_field_collection_field_formatter_settings_form($field, $insta
   $display = $instance['display'][$view_mode];
   $settings = $display['settings'];
 
+  $options = array();
+
+  $field_collections = field_info_instances('field_collection_item', $field['field_name']);
+  foreach ($field_collections as $field_name => $field) {
+
+    $options[$field_name] = $field['label'] . ' (' . $field_name . ')';
+  }
+
   $element['tab_field'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Tab Field'),
+    '#type' => 'select',
+    '#title' => t('Label field'),
+    '#description' => t('The field collection filed to use for the tab label.'),
     '#required' => TRUE,
+    '#options' => $options,
     '#default_value' => $settings['tab_field'],
-    '#description' => t('The name of the field to use as the tab.'),
   );
 
   $element['content_field'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Content Field'),
+    '#type' => 'select',
+    '#title' => t('Body field'),
+    '#description' => t('The field collection filed to use for the tab body.'),
     '#required' => TRUE,
+    '#options' => $options,
     '#default_value' => $settings['content_field'],
-    '#description' => t('The name of the field to use as the tab\'s content.'),
   );
 
   $element['content_field_striptags'] = array(
