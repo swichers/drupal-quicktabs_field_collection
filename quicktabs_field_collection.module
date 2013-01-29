@@ -83,7 +83,7 @@ function quicktabs_field_collection_field_formatter_settings_form($field, $insta
   $element['content_field_striptags'] = array(
     '#type' => 'checkbox',
     '#title' => t('Strip Tags from content field'),
-    '#description' => t('Strip all HTML tags from the value used for the tab\'s content.'),
+    '#description' => t("Strip all HTML tags from the value used for the tab's content."),
     '#default_value' => $settings['content_field_striptags'],
   );
 
@@ -105,8 +105,8 @@ function quicktabs_field_collection_field_formatter_settings_form($field, $insta
  *
  * Taken from the QuickTab module and tweaked slightly to work within the field
  * config form. If/when QuickTabs offers an API to pull in renderes and styles
- * this function can be removed and the changes moved back into the normal settings
- * form.
+ * this function can be removed and the changes moved back into the normal
+ * settings form.
  *
  * @param array $element
  *   The settings form array.
@@ -191,7 +191,6 @@ function quicktabs_field_collection_field_formatter_settings_summary($field, $in
   $summary[] = t('QuickTab renderer: @qt-renderer', array('@qt-renderer' => $settings['qt_renderer']));
   $summary[] = t('QuickTab style: @qt-style', array('@qt-style' => $settings['qt_style']));
 
-
   return implode('<br />', $summary);
 }
 
@@ -241,7 +240,7 @@ function quicktabs_field_collection_theme($existing, $type, $theme, $path) {
     'field_collection_quicktabs_formatter_field_collection_quicktabs' => array(
       'variables' => array(
         'items' => NULL,
-        'settings' => array()
+        'settings' => array(),
       ),
     ),
   );
@@ -292,7 +291,10 @@ function theme_field_collection_quicktabs_formatter_field_collection_quicktabs($
 
   $qt = quicktabs_build_quicktabs('field_collection_quicktabs', $qt_settings, $tabs);
 
-  // Class is added here instead of to the $qt_settings so it wraps the entire QuickTabs output.
+  /*
+   * The class is added here instead of to $qt_settings so it wraps the entire
+   * QuickTabs output.
+   */
   if (!empty($qt['content']) && !empty($formatter_settings['classes'])) {
 
     $qt['content']['content']['#options']['attributes']['class'] .= ' ' . $formatter_settings['classes'];
