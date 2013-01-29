@@ -35,6 +35,9 @@ function quicktabs_field_collection_field_formatter_info() {
         'content_field' => NULL,
         'content_field_striptags' => FALSE,
         'classes' => NULL,
+        'qt_hide_empty_tabs' => TRUE,
+        'qt_renderer' => 'quicktabs',
+        'qt_style' => 'default',
       ),
     );
   }
@@ -79,19 +82,89 @@ function quicktabs_field_collection_field_formatter_settings_form($field, $insta
   $element['content_field_striptags'] = array(
     '#type' => 'checkbox',
     '#title' => t('Strip Tags from content field'),
-    '#default_value' => $settings['content_field_striptags'],
     '#description' => t('Strip all HTML tags from the value used for the tab\'s content.'),
+    '#default_value' => $settings['content_field_striptags'],
   );
 
   $element['classes'] = array(
     '#type' => 'textfield',
     '#title' => t('Custom Classes'),
-    '#default_value' => $settings['classes'],
     '#description' => t('Provide a space delimited list of css classes to use.'),
+    '#default_value' => $settings['classes'],
   );
+
+  quicktabs_field_collection_get_quicktabs_options($element, $settings);
 
   return $element;
 
+}
+
+/**
+ * Helper function to add QuickTab settings fields to the field settings form.
+ *
+ * Taken from the QuickTab module and tweaked slightly to work within the field
+ * config form. If/when QuickTabs offers an API to pull in renderes and styles
+ * this function can be removed the changed moved back into the normal settings
+ * form.
+ *
+ * @param array $element
+ *   The settings form array.
+ *
+ * @param array $settings
+ *   The current settings for the field.
+ */
+function quicktabs_field_collection_get_quicktabs_options(&$element, $settings) {
+
+  $element['qt'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('QuickTab settings'),
+    '#collapsible' => TRUE,
+  );
+
+  $element['qt']['qt_hide_empty_tabs'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Hide empty tabs'),
+    '#description' => t('Hide tabs where there is no content available.'),
+    '#default_value' => $settings['qt_hide_empty_tabs'],
+  );
+
+  ctools_include('plugins');
+  $renderers = ctools_get_plugins('quicktabs', 'renderers');
+  $renderer_options = array();
+  foreach ($renderers as $name => $info) {
+    if ($class = ctools_plugin_load_class('quicktabs', 'renderers', $name, 'handler')) {
+      // Add the renderer to the dropdown list of renderers
+      $renderer_options[$name] = $name;
+      // Get the renderer's options form elements
+
+      // PHP 5.2 doesn't support $class::staticMethod() syntax, so we have to
+      // use call_user_func_array() until PHP 5.3 is required.
+      $renderer_form_options[$name] = call_user_func_array(array($class, 'optionsForm'), array($qt));
+    }
+  }
+  ksort($renderer_options);
+  $element['qt']['qt_renderer'] = array(
+    '#type' => 'select',
+    '#title' => t('Renderer'),
+    '#description' => t('Choose how to render the content.'),
+    '#options' => $renderer_options,
+    '#default_value' => $settings['qt_renderer'],
+  );
+
+  $styles = module_invoke_all('quicktabs_tabstyles');
+  $style_options = array();
+  // The keys used for options must be valid html IDs.
+  foreach ($styles as $style) {
+    $style_options[$style] = $style;
+  }
+  ksort($style_options);
+  $element['qt']['qt_style'] = array(
+    '#type' => 'select',
+    '#title' => t('Style'),
+    '#description' => t('Choose the quicktab style.'),
+    '#options' => array('nostyle' => t('No style')) + array('default' => t('Default style')) + $style_options,
+    '#default_value' => $settings['qt_style'],
+  );
 }
 
 /**
@@ -104,16 +177,21 @@ function quicktabs_field_collection_field_formatter_settings_summary($field, $in
 
   $summary = array();
 
-  $summary[] = t('Tab Field: @field-name', array('@field-name' => $settings['tab_field']));
-  $summary[] = t('Content Field: @field-name', array('@field-name' => $settings['content_field']));
+  $summary[] = t('Tab field: @field-name', array('@field-name' => $settings['tab_field']));
+  $summary[] = t('Content field: @field-name', array('@field-name' => $settings['content_field']));
   $summary[] = t('Strip tags in content: @yes-no',
                  array('@yes-no' => !empty($settings['content_field_striptags']) ? 'yes' : 'no')
                );
-
   if (!empty($settings['classes'])) {
 
     $summary[] = t('Classes: @classes', array('@classes' => $settings['classes']));
   }
+  $summary[] = t('Hide empty tabs: @yes-no',
+                 array('@yes-no' => !empty($settings['qt_hide_empty_tabs']) ? 'yes' : 'no')
+               );
+  $summary[] = t('QuickTab renderer: @qt-renderer', array('@qt-renderer' => $settings['qt_renderer']));
+  $summary[] = t('QuickTab style: @qt-style', array('@qt-style' => $settings['qt_style']));
+
 
   return implode('<br />', $summary);
 }
@@ -126,7 +204,7 @@ function quicktabs_field_collection_field_formatter_view($entity_type, $entity, 
   $element = array();
   $settings = $display['settings'];
   $theme_func = 'field_collection_quicktabs_formatter_' . $display['type'];
-
+dpm($settings);
   switch ($display['type']) {
 
     case 'field_collection_quicktabs':
@@ -204,10 +282,10 @@ function theme_field_collection_quicktabs_formatter_field_collection_quicktabs($
   }
 
   $qt_settings = array(
-    'hide_empty_tabs' => TRUE,
+    'hide_empty_tabs' => !empty($settings['qt_hide_empty_tabs']),
     'ajax' => FALSE,
-    'renderer' => 'quicktabs',
-    'style' => 'nostyle',
+    'renderer' => $settings['qt_renderer'],
+    'style' => $settings['qt_style'],
     'options' => array(),
   );
 
