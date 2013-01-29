@@ -327,12 +327,6 @@ function _quicktabs_field_collection_get_tab_parts($collection_entity, $settings
   );
 
   // Retrieve the render array for the content field.
-  $content_item = field_get_items(
-    'field_collection_item',
-    $collection_entity,
-    $content_field_name
-  );
-
   $content_value = field_view_field(
     'field_collection_item',
     $collection_entity,
