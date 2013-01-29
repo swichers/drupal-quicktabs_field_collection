@@ -76,7 +76,6 @@ function quicktabs_field_collection_field_formatter_settings_form($field, $insta
   $element['classes'] = array(
     '#type' => 'textfield',
     '#title' => t('Custom Classes'),
-    '#required' => TRUE,
     '#default_value' => $settings['classes'],
     '#description' => t('Provide a space delimited list of css classes to use.'),
   );
