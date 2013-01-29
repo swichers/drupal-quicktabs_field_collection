@@ -20,16 +20,18 @@ CONFIGURATION
 
  3. Click the gear icon on the right to access the formatter settings.
 
- 4. (REQUIRED) Enter the machine-name of the field to use for the tab values.
+ 4. (REQUIRED) Select the field to use for the tab values.
 
- 5. (REQUIRED) Enter the machine-name of the field to use for the tab contents.
+ 5. (REQUIRED) Select the field to use for the tab contents.
 
  6. Optionally tick the box to strip all HTML tags from the tab content.
 
  7. Optionally add custom classes that will output in the field-collection
     wrapper div.
 
- 8. Adjust formatter settings for each of the fields in the field-collection.
+ 8. Optionally configure the available QuickTabs options.
+
+ 9. Adjust formatter settings for each of the fields in the field-collection.
 
     The field used to output the value of the tab label and tab contents
     respects the formatter settings applied to those fields. However any HTML
