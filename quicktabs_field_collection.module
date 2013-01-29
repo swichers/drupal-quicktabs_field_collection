@@ -116,12 +116,10 @@ function quicktabs_field_collection_field_formatter_settings_form($field, $insta
 function quicktabs_field_collection_get_quicktabs_options(&$element, $settings) {
 
   $element['qt'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('QuickTab settings'),
-    '#collapsible' => TRUE,
+    '#markup' => '<b>' . t('QuickTab settings') . '</b>',
   );
 
-  $element['qt']['qt_hide_empty_tabs'] = array(
+  $element['qt_hide_empty_tabs'] = array(
     '#type' => 'checkbox',
     '#title' => t('Hide empty tabs'),
     '#description' => t('Hide tabs where there is no content available.'),
@@ -143,7 +141,7 @@ function quicktabs_field_collection_get_quicktabs_options(&$element, $settings) 
     }
   }
   ksort($renderer_options);
-  $element['qt']['qt_renderer'] = array(
+  $element['qt_renderer'] = array(
     '#type' => 'select',
     '#title' => t('Renderer'),
     '#description' => t('Choose how to render the content.'),
@@ -158,7 +156,7 @@ function quicktabs_field_collection_get_quicktabs_options(&$element, $settings) 
     $style_options[$style] = $style;
   }
   ksort($style_options);
-  $element['qt']['qt_style'] = array(
+  $element['qt_style'] = array(
     '#type' => 'select',
     '#title' => t('Style'),
     '#description' => t('Choose the quicktab style.'),
@@ -204,7 +202,7 @@ function quicktabs_field_collection_field_formatter_view($entity_type, $entity, 
   $element = array();
   $settings = $display['settings'];
   $theme_func = 'field_collection_quicktabs_formatter_' . $display['type'];
-dpm($settings);
+
   switch ($display['type']) {
 
     case 'field_collection_quicktabs':
