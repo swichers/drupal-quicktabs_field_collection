@@ -1,7 +1,7 @@
 <?php
 /**
  * @file
- * Renders a field collection as QuickTabs
+ * Renders a field collection as QuickTabs.
  */
 
 /**
@@ -135,15 +135,19 @@ function quicktabs_field_collection_field_formatter_view($entity_type, $entity, 
         '#settings' => $settings,
       );
 
-
       foreach ($items as $delta => $item) {
 
         $entity = entity_load('field_collection_item', array($item['value']));
-        $new_element['#items'][$item['value']] = current($entity);
+        if (!empty($entity)) {
+
+          $new_element['#items'][$item['value']] = current($entity);
+        }
       }
 
-      $element[] = $new_element;
+      if (!empty($new_element['#items'])) {
 
+        $element[] = $new_element;
+      }
       break;
   }
 
@@ -158,8 +162,8 @@ function quicktabs_field_collection_theme($existing, $type, $theme, $path) {
   return array(
     'field_collection_quicktabs_formatter_field_collection_quicktabs' => array(
       'variables' => array(
-                          'items' => NULL,
-                          'settings' => array()
+        'items' => NULL,
+        'settings' => array()
       ),
     ),
   );
