@@ -1,6 +1,5 @@
 name        = "QuickTabs Field Collection"
 description = "Renders a field collection as QuickTabs"
-package     = "St. Lukes"
 core        = "7.x"
 version     = "7.x-0.1-dev"
 php         = "5.3"
