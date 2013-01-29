@@ -35,6 +35,7 @@ function quicktabs_field_collection_field_formatter_info() {
         'content_field' => NULL,
         'content_field_striptags' => FALSE,
         'classes' => NULL,
+        // Settings for the QuickTabs module that get passed into its API.
         'qt_hide_empty_tabs' => TRUE,
         'qt_renderer' => 'quicktabs',
         'qt_style' => 'default',
@@ -104,7 +105,7 @@ function quicktabs_field_collection_field_formatter_settings_form($field, $insta
  *
  * Taken from the QuickTab module and tweaked slightly to work within the field
  * config form. If/when QuickTabs offers an API to pull in renderes and styles
- * this function can be removed the changed moved back into the normal settings
+ * this function can be removed and the changes moved back into the normal settings
  * form.
  *
  * @param array $element
@@ -213,6 +214,7 @@ function quicktabs_field_collection_field_formatter_view($entity_type, $entity, 
 
       foreach ($items as $delta => $item) {
 
+        // Verify that there is something in the field collection befor trying to render it.
         $entity = entity_load('field_collection_item', array($item['value']));
         if (!empty($entity)) {
 
@@ -281,6 +283,7 @@ function theme_field_collection_quicktabs_formatter_field_collection_quicktabs($
 
   $qt_settings = array(
     'hide_empty_tabs' => !empty($settings['qt_hide_empty_tabs']),
+    // AJAX is unsupported for this field formatter.
     'ajax' => FALSE,
     'renderer' => $settings['qt_renderer'],
     'style' => $settings['qt_style'],
@@ -289,6 +292,7 @@ function theme_field_collection_quicktabs_formatter_field_collection_quicktabs($
 
   $qt = quicktabs_build_quicktabs('field_collection_quicktabs', $qt_settings, $tabs);
 
+  // Class is added here instead of to the $qt_settings so it wraps the entire QuickTabs output.
   if (!empty($qt['content']) && !empty($formatter_settings['classes'])) {
 
     $qt['content']['content']['#options']['attributes']['class'] .= ' ' . $formatter_settings['classes'];
