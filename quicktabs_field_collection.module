@@ -281,11 +281,11 @@ function theme_field_collection_quicktabs_formatter_field_collection_quicktabs($
   }
 
   $qt_settings = array(
-    'hide_empty_tabs' => !empty($settings['qt_hide_empty_tabs']),
+    'hide_empty_tabs' => !empty($formatter_settings['qt_hide_empty_tabs']),
     // AJAX is unsupported for this field formatter.
     'ajax' => FALSE,
-    'renderer' => $settings['qt_renderer'],
-    'style' => $settings['qt_style'],
+    'renderer' => $formatter_settings['qt_renderer'],
+    'style' => $formatter_settings['qt_style'],
     'options' => array(),
   );
 
