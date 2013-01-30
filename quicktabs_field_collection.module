@@ -446,3 +446,20 @@ function _quicktabs_field_collection_get_tab_parts($collection_entity, $settings
     'contents' => array('#markup' => $content),
   );
 }
+
+/**
+ * Implements hook_help().
+ */
+function quicktabs_field_collection_help($path, $arg) {
+
+  switch ($path) {
+
+    case 'admin/help#quicktabs_field_collection':
+      $out = '';
+      $out .= '<p>' . t('The QTFC module is designed to let you use the QuickTabs module to render field collection entities.') . '</p>';
+      $out .= '<p>' . t('In order to use this module you must select and configure the QuickTabs formatter on any field collection display. The only required options are the source of the tab label and body.') . '</p>';
+      $out .= '<p>' . t('A text field as the source for the tab label is recommended. Any content used for the tab label will be run through <a href="@check-plain">check_plain()</a> before being displayed', array('@check-plain' => 'http://api.drupal.org/api/drupal/includes!bootstrap.inc/function/check_plain/7')) . '</p>';
+      $out .= '<p>' . t('The source of the body content can be any type of field. The module was designed with a long text field in mind, but it will render anything that makes use of the Drupal render API. This means you can get complex data to render by using a field collection with other fields as the source of the tab body. Combining this with <a href="@ds">Display Suite</a> increases the flexibility of what the tabbed content can look like.', array('@ds' => 'http://drupal.org/project/ds')) . '</p>';
+      return $out;
+  }
+}
