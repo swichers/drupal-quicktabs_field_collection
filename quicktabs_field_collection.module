@@ -286,7 +286,7 @@ function theme_field_collection_quicktabs_formatter_field_collection_quicktabs($
     'ajax' => FALSE,
     'renderer' => $formatter_settings['qt_renderer'],
     'style' => $formatter_settings['qt_style'],
-    'options' => array(),
+    'options' => _quicktab_settings_by_renderer($formatter_settings['qt_renderer']),
   );
 
   $qt = quicktabs_build_quicktabs('field_collection_quicktabs', $qt_settings, $tabs);
@@ -348,4 +348,34 @@ function _quicktabs_field_collection_get_tab_parts($collection_entity, $settings
     'title' => decode_entities(render($label_value)),
     'contents' => array('#markup' => $content),
   );
+}
+
+/**
+ * Helper function to pull renderer settings for QuickTab renderers.
+ *
+ * @param string $renderer_name
+ *   The name of the QuickTab renderer to retrieve settings for.
+ *
+ * @return array
+ *   An array of settings.
+ */
+function _quicktab_settings_by_renderer($renderer_name) {
+
+  $renderer_settings = array();
+
+  $renderer_settings['accordion'] = array(
+    'history' => FALSE,
+    'jquery_ui' => array(
+      'autoHeight' => FALSE,
+      'collapsible' => FALSE,
+    ),
+  );
+
+  $renderer_settings['ui_tabs'] = array(
+    'history' => FALSE,
+  );
+
+  $renderer_settings['quicktabs'] = array();
+
+  return empty($renderer_settings[$renderer_name]) ? array() : $renderer_settings[$renderer_name];
 }
