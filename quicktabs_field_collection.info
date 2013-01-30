@@ -4,4 +4,3 @@ core        = "7.x"
 dependencies[] = "quicktabs"
 dependencies[] = "field_collection"
 dependencies[] = "ctools"
-
