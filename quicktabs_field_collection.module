@@ -203,7 +203,7 @@ function quicktabs_field_collection_get_quicktabs_options(&$element, $settings) 
     '#type' => 'select',
     '#title' => t('Style'),
     '#description' => t('Choose the quicktab style.'),
-    '#options' => array(array('default' => t('Default style')) + 'nostyle' => t('No style')) + $style_options,
+    '#options' => array('default' => t('Default style')) + array('nostyle' => t('No style')) + $style_options,
     '#default_value' => $settings['quicktabs']['style'],
   );
 }
