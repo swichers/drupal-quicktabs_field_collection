@@ -148,7 +148,17 @@ function quicktabs_field_collection_get_quicktabs_options(&$element, $settings) 
     '#description' => t('Choose how to render the content.'),
     '#options' => $renderer_options,
     '#default_value' => $settings['qt_renderer'],
+    '#attributes' => array('class' => array('qtfc-renderer-select')),
   );
+  // Add the renderer options form elements to the form, to be shown only if the
+  // renderer in question is selected.
+  $element['options'] = array('#tree' => TRUE);
+  foreach ($renderer_form_options as $renderer => $options) {
+    foreach ($options as &$option) {
+      $option['#states'] = array('visible' => array('select.qtfc-renderer-select' => array('value' => $renderer)));
+    }
+    $element['options'][$renderer] = $options;
+  }
 
   $styles = module_invoke_all('quicktabs_tabstyles');
   $style_options = array();
