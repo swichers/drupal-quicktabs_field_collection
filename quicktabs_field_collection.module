@@ -34,11 +34,26 @@ function quicktabs_field_collection_field_formatter_info() {
         'tab_field' => NULL,
         'content_field' => NULL,
         'content_field_striptags' => FALSE,
-        'classes' => NULL,
+        'classes' => '',
         // Settings for the QuickTabs module that get passed into its API.
-        'qt_hide_empty_tabs' => TRUE,
-        'qt_renderer' => 'quicktabs',
-        'qt_style' => 'default',
+        'quicktabs' => array(
+          'ajax' => FALSE,
+          'hide_empty_tabs' => TRUE,
+          'renderer' => 'quicktabs',
+          'style' => 'default',
+          'options' => array(
+            'ui_tabs' => array(
+              'history' => FALSE,
+            ),
+            'accordion' => array(
+              'history' => FALSE,
+              'jquery_ui' => array(
+                'autoHeight' => TRUE,
+                'collapsible' => TRUE,
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -97,7 +112,6 @@ function quicktabs_field_collection_field_formatter_settings_form($field, $insta
   quicktabs_field_collection_get_quicktabs_options($element, $settings);
 
   return $element;
-
 }
 
 /**
@@ -116,15 +130,19 @@ function quicktabs_field_collection_field_formatter_settings_form($field, $insta
  */
 function quicktabs_field_collection_get_quicktabs_options(&$element, $settings) {
 
-  $element['qt'] = array(
-    '#markup' => '<b>' . t('QuickTab settings') . '</b>',
+  $element['quicktabs'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('QuickTab settings'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+    '#tree' => TRUE,
   );
 
-  $element['qt_hide_empty_tabs'] = array(
+  $element['quicktabs']['hide_empty_tabs'] = array(
     '#type' => 'checkbox',
     '#title' => t('Hide empty tabs'),
     '#description' => t('Hide tabs where there is no content available.'),
-    '#default_value' => $settings['qt_hide_empty_tabs'],
+    '#default_value' => $settings['quicktabs']['hide_empty_tabs'],
   );
 
   ctools_include('plugins');
@@ -142,22 +160,36 @@ function quicktabs_field_collection_get_quicktabs_options(&$element, $settings) 
     }
   }
   ksort($renderer_options);
-  $element['qt_renderer'] = array(
+  $element['quicktabs']['renderer'] = array(
     '#type' => 'select',
     '#title' => t('Renderer'),
     '#description' => t('Choose how to render the content.'),
     '#options' => $renderer_options,
-    '#default_value' => $settings['qt_renderer'],
+    '#default_value' => $settings['quicktabs']['renderer'],
     '#attributes' => array('class' => array('qtfc-renderer-select')),
   );
   // Add the renderer options form elements to the form, to be shown only if the
   // renderer in question is selected.
-  $element['options'] = array('#tree' => TRUE);
+  $element['quicktabs']['options'] = array('#tree' => TRUE);
   foreach ($renderer_form_options as $renderer => $options) {
-    foreach ($options as &$option) {
+
+    $defaults = !empty($settings['quicktabs']['options'][$renderer]) ?
+      $settings['quicktabs']['options'][$renderer] :
+      array();
+
+    foreach ($options as $key => &$option) {
+
+      $renderer_settings = isset($defaults[$key]) ? $defaults[$key] : NULL;
+      if (!empty($renderer_settings)) {
+
+        // Settings needs special handling in the case of nested form items.
+        $option = _quicktabs_field_collection_recurse_set_defaults($option, $renderer_settings);
+      }
+
       $option['#states'] = array('visible' => array('select.qtfc-renderer-select' => array('value' => $renderer)));
     }
-    $element['options'][$renderer] = $options;
+
+    $element['quicktabs']['options'][$renderer] = $options;
   }
 
   $styles = module_invoke_all('quicktabs_tabstyles');
@@ -167,13 +199,51 @@ function quicktabs_field_collection_get_quicktabs_options(&$element, $settings) 
     $style_options[$style] = $style;
   }
   ksort($style_options);
-  $element['qt_style'] = array(
+  $element['quicktabs']['style'] = array(
     '#type' => 'select',
     '#title' => t('Style'),
     '#description' => t('Choose the quicktab style.'),
-    '#options' => array('nostyle' => t('No style')) + array('default' => t('Default style')) + $style_options,
-    '#default_value' => $settings['qt_style'],
+    '#options' => array(array('default' => t('Default style')) + 'nostyle' => t('No style')) + $style_options,
+    '#default_value' => $settings['quicktabs']['style'],
   );
+}
+
+/**
+ * Recursively set default settings for QuickTab renderers.
+ *
+ * @param array $option
+ *   The form option to set #default_value on.
+ *
+ * @param mixed $setting
+ *   A keyed array of options or the single option value to set.
+ *
+ * @return array
+ *   The modified $option.
+ */
+function _quicktabs_field_collection_recurse_set_defaults($option, $setting) {
+
+  foreach (element_children($option) as $key) {
+
+    if (empty($setting[$key])) {
+
+      continue;
+    }
+
+    $option[$key] = _quicktabs_field_collection_recurse_set_defaults($option[$key], $setting[$key]);
+
+    /*
+     * Remove setting so we don't mistakenly put an array of child settings as
+     * the default value for a parent level form item.
+     */
+    unset($setting[$key]);
+  }
+
+  if (!empty($setting)) {
+
+    $option['#default_value'] = $setting;
+  }
+
+  return $option;
 }
 
 /**
@@ -196,10 +266,10 @@ function quicktabs_field_collection_field_formatter_settings_summary($field, $in
     $summary[] = t('Classes: @classes', array('@classes' => $settings['classes']));
   }
   $summary[] = t('Hide empty tabs: @yes-no',
-                 array('@yes-no' => !empty($settings['qt_hide_empty_tabs']) ? 'yes' : 'no')
+                 array('@yes-no' => !empty($settings['quicktabs']['hide_empty_tabs']) ? 'yes' : 'no')
                );
-  $summary[] = t('QuickTab renderer: @qt-renderer', array('@qt-renderer' => $settings['qt_renderer']));
-  $summary[] = t('QuickTab style: @qt-style', array('@qt-style' => $settings['qt_style']));
+  $summary[] = t('QuickTab renderer: @qt-renderer', array('@qt-renderer' => $settings['quicktabs']['renderer']));
+  $summary[] = t('QuickTab style: @qt-style', array('@qt-style' => $settings['quicktabs']['style']));
 
   return implode('<br />', $summary);
 }
@@ -211,6 +281,7 @@ function quicktabs_field_collection_field_formatter_view($entity_type, $entity, 
 
   $element = array();
   $settings = $display['settings'];
+
   $theme_func = 'field_collection_quicktabs_formatter_' . $display['type'];
 
   switch ($display['type']) {
@@ -268,7 +339,11 @@ function quicktabs_field_collection_theme($existing, $type, $theme, $path) {
 function theme_field_collection_quicktabs_formatter_field_collection_quicktabs($variables) {
 
   $items = $variables['items'];
-  $formatter_settings = $variables['settings'];
+  $defaults = quicktabs_field_collection_field_formatter_info();
+  $defaults = !empty($defaults['field_collection_quicktabs']['settings']) ?
+    $defaults['field_collection_quicktabs']['settings'] :
+    array();
+  $settings = array_merge($defaults, $variables['settings']);
 
   if (empty($items)) {
 
@@ -285,29 +360,41 @@ function theme_field_collection_quicktabs_formatter_field_collection_quicktabs($
     }
 
     $tabs[] = array_merge(
-      _quicktabs_field_collection_get_tab_parts($collection, $formatter_settings),
+      _quicktabs_field_collection_get_tab_parts($collection, $settings),
       array('weight' => $weight++)
     );
   }
 
-  $qt_settings = array(
-    'hide_empty_tabs' => !empty($formatter_settings['qt_hide_empty_tabs']),
-    // AJAX is unsupported for this field formatter.
-    'ajax' => FALSE,
-    'renderer' => $formatter_settings['qt_renderer'],
-    'style' => $formatter_settings['qt_style'],
-    'options' => _quicktab_settings_by_renderer($formatter_settings['qt_renderer']),
-  );
+  // AJAX is unsupported for this field formatter. Force disable.
+  $settings['quicktabs']['ajax'] = FALSE;
 
-  $qt = quicktabs_build_quicktabs('field_collection_quicktabs', $qt_settings, $tabs);
+  $renderer_settings = array();
+  // Adjust renderer options if available.
+  if (!empty($settings['quicktabs']['options'][$settings['quicktabs']['renderer']])) {
+
+    $settings['quicktabs']['options'] = $settings['quicktabs']['options'][$settings['quicktabs']['renderer']];
+  }
+
+  $qt = quicktabs_build_quicktabs('field_collection_quicktabs', $settings['quicktabs'], $tabs);
 
   /*
-   * The class is added here instead of to $qt_settings so it wraps the entire
+   * The class is added here instead of to the QT options so it wraps the entire
    * QuickTabs output.
    */
-  if (!empty($qt['content']) && !empty($formatter_settings['classes'])) {
+  if (!empty($qt['content']) && !empty($settings['classes'])) {
 
-    $qt['content']['content']['#options']['attributes']['class'] .= ' ' . $formatter_settings['classes'];
+    $settings['classes'] = explode(' ', $settings['classes']);
+    if (!isset($qt['content']['content']['#options']['attributes']['class'])) {
+
+      $qt['content']['content']['#options']['attributes']['class'] = array();
+    }
+
+    $qt_classes = &$qt['content']['content']['#options']['attributes']['class'];
+    if (!is_array($qt_classes)) {
+
+      $qt_classes = explode(' ', $qt_classes);
+    }
+    $qt_classes = array_merge($qt_classes, $settings['classes']);
   }
 
   return render($qt);
@@ -358,34 +445,4 @@ function _quicktabs_field_collection_get_tab_parts($collection_entity, $settings
     'title' => decode_entities(render($label_value)),
     'contents' => array('#markup' => $content),
   );
-}
-
-/**
- * Helper function to pull renderer settings for QuickTab renderers.
- *
- * @param string $renderer_name
- *   The name of the QuickTab renderer to retrieve settings for.
- *
- * @return array
- *   An array of settings.
- */
-function _quicktab_settings_by_renderer($renderer_name) {
-
-  $renderer_settings = array();
-
-  $renderer_settings['accordion'] = array(
-    'history' => FALSE,
-    'jquery_ui' => array(
-      'autoHeight' => FALSE,
-      'collapsible' => FALSE,
-    ),
-  );
-
-  $renderer_settings['ui_tabs'] = array(
-    'history' => FALSE,
-  );
-
-  $renderer_settings['quicktabs'] = array();
-
-  return empty($renderer_settings[$renderer_name]) ? array() : $renderer_settings[$renderer_name];
 }
