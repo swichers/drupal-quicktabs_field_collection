@@ -192,20 +192,24 @@ function quicktabs_field_collection_get_quicktabs_options(&$element, $settings) 
     $element['quicktabs']['options'][$renderer] = $options;
   }
 
-  $styles = module_invoke_all('quicktabs_tabstyles');
-  $style_options = array();
-  // The keys used for options must be valid html IDs.
-  foreach ($styles as $style) {
-    $style_options[$style] = $style;
+  if (module_exists('quicktabs_tabstyles')) {
+
+    $styles = module_invoke_all('quicktabs_tabstyles');
+    $style_options = array();
+    // The keys used for options must be valid html IDs.
+    foreach ($styles as $style) {
+      $style_options[$style] = $style;
+    }
+    ksort($style_options);
+    $element['quicktabs']['style'] = array(
+      '#type' => 'select',
+      '#title' => t('Style'),
+      '#description' => t('Choose the quicktab style.'),
+      '#options' => array('default' => t('Default style')) + array('nostyle' => t('No style')) + $style_options,
+      '#default_value' => $settings['quicktabs']['style'],
+      '#states' => array('visible' => array('select.qtfc-renderer-select' => array('value' => 'quicktabs'))),
+    );
   }
-  ksort($style_options);
-  $element['quicktabs']['style'] = array(
-    '#type' => 'select',
-    '#title' => t('Style'),
-    '#description' => t('Choose the quicktab style.'),
-    '#options' => array('default' => t('Default style')) + array('nostyle' => t('No style')) + $style_options,
-    '#default_value' => $settings['quicktabs']['style'],
-  );
 }
 
 /**
@@ -269,7 +273,11 @@ function quicktabs_field_collection_field_formatter_settings_summary($field, $in
                  array('@yes-no' => !empty($settings['quicktabs']['hide_empty_tabs']) ? 'yes' : 'no')
                );
   $summary[] = t('QuickTab renderer: @qt-renderer', array('@qt-renderer' => $settings['quicktabs']['renderer']));
-  $summary[] = t('QuickTab style: @qt-style', array('@qt-style' => $settings['quicktabs']['style']));
+
+  if (module_exists('quicktabs_tabstyles')) {
+
+    $summary[] = t('QuickTab style: @qt-style', array('@qt-style' => $settings['quicktabs']['style']));
+  }
 
   return implode('<br />', $summary);
 }
