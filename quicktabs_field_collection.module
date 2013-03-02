@@ -32,8 +32,11 @@ function quicktabs_field_collection_field_formatter_info() {
       'description' => t('Displays a field collection as a QuickTabs instance'),
       'settings' => array(
         'tab_field' => NULL,
-        'content_field' => NULL,
-        'content_field_striptags' => FALSE,
+        'content_options' => array(
+          'content_field' => NULL,
+          'content_view_mode' => 'field',
+          'content_field_striptags' => FALSE,
+        ),
         'classes' => '',
         // Settings for the QuickTabs module that get passed into its API.
         'quicktabs' => array(
@@ -77,6 +80,14 @@ function quicktabs_field_collection_field_formatter_settings_form($field, $insta
     $options[$field_name] = $field['label'] . ' (' . $field_name . ')';
   }
 
+  $view_modes = array('field' => t('Field only'));
+
+  $entity_info = entity_get_info('field_collection_item');
+  foreach ($entity_info['view modes'] as $key => $info) {
+
+    $view_modes[$key] = $info['label'] . ' (' . $key . ')';
+  }
+
   $element['tab_field'] = array(
     '#type' => 'select',
     '#title' => t('Label field'),
@@ -86,21 +97,43 @@ function quicktabs_field_collection_field_formatter_settings_form($field, $insta
     '#default_value' => $settings['tab_field'],
   );
 
-  $element['content_field'] = array(
-    '#type' => 'select',
-    '#title' => t('Body field'),
-    '#description' => t('The field collection field to use for the tab body.'),
-    '#required' => TRUE,
-    '#options' => $options,
-    '#default_value' => $settings['content_field'],
+  $element['content_options'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Body'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+    '#tree' => TRUE,
   );
 
-  $element['content_field_striptags'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Strip Tags from content field'),
-    '#description' => t("Strip all HTML tags from the value used for the tab's content."),
-    '#default_value' => $settings['content_field_striptags'],
+  $element['content_options']['content_view_mode'] = array(
+    '#type' => 'select',
+    '#title' => t('View mode'),
+    '#description' => t('The field collection view mode to use for rendering. If the field option is selected then a field to display must be chosen.'),
+    '#required' => TRUE,
+    '#options' => $view_modes,
+    '#default_value' => $settings['content_options']['content_view_mode'],
+    '#attributes' => array('class' => array('qtfc-view-mode-select')),
   );
+
+  $element['content_options']['content_field'] = array(
+    '#type' => 'select',
+    '#title' => t('Field'),
+    '#description' => t('The field collection field to use for the tab body.'),
+    '#required' => FALSE,
+    '#options' => $options,
+    '#default_value' => $settings['content_options']['content_field'],
+    '#states' => array('enabled' => array('select.qtfc-view-mode-select' => array('value' => 'field'))),
+    '#element_validate' => array('quicktabs_field_collection_validate_content_field'),
+  );
+
+  $element['content_options']['content_field_striptags'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Strip tags'),
+    '#description' => t("Strip all HTML tags from the value used for the tab's content."),
+    '#default_value' => $settings['content_options']['content_field_striptags'],
+  );
+
+  quicktabs_field_collection_get_quicktabs_options($element, $settings);
 
   $element['classes'] = array(
     '#type' => 'textfield',
@@ -108,8 +141,6 @@ function quicktabs_field_collection_field_formatter_settings_form($field, $insta
     '#description' => t('Provide a space delimited list of css classes to use.'),
     '#default_value' => $settings['classes'],
   );
-
-  quicktabs_field_collection_get_quicktabs_options($element, $settings);
 
   return $element;
 }
@@ -134,7 +165,7 @@ function quicktabs_field_collection_get_quicktabs_options(&$element, $settings) 
     '#type' => 'fieldset',
     '#title' => t('QuickTab settings'),
     '#collapsible' => TRUE,
-    '#collapsed' => FALSE,
+    '#collapsed' => TRUE,
     '#tree' => TRUE,
   );
 
@@ -261,14 +292,26 @@ function quicktabs_field_collection_field_formatter_settings_summary($field, $in
   $summary = array();
 
   $summary[] = t('Tab field: @field-name', array('@field-name' => $settings['tab_field']));
-  $summary[] = t('Content field: @field-name', array('@field-name' => $settings['content_field']));
+
+  if ('field' === $settings['content_options']['content_view_mode']) {
+
+    $summary[] = t('Content field: @field-name', array('@field-name' => $settings['content_options']['content_field']));
+
+  }
+  else {
+
+    $summary[] = t('Content view mode: @view-mode', array('@view-mode' => $settings['content_options']['content_view_mode']));
+  }
+
   $summary[] = t('Strip tags in content: @yes-no',
-                 array('@yes-no' => !empty($settings['content_field_striptags']) ? 'yes' : 'no')
+                 array('@yes-no' => !empty($settings['content_options']['content_field_striptags']) ? 'yes' : 'no')
                );
+
   if (!empty($settings['classes'])) {
 
     $summary[] = t('Classes: @classes', array('@classes' => $settings['classes']));
   }
+
   $summary[] = t('Hide empty tabs: @yes-no',
                  array('@yes-no' => !empty($settings['quicktabs']['hide_empty_tabs']) ? 'yes' : 'no')
                );
@@ -420,7 +463,6 @@ function theme_field_collection_quicktabs_formatter_field_collection_quicktabs($
 function _quicktabs_field_collection_get_tab_parts($collection_entity, $settings) {
 
   $label_field_name = $settings['tab_field'];
-  $content_field_name = $settings['content_field'];
 
   // Retrieve the render array for the tab field.
   $label_item = field_get_items(
@@ -434,19 +476,35 @@ function _quicktabs_field_collection_get_tab_parts($collection_entity, $settings
     $collection_entity,
     $label_field_name,
     $label_item[0],
-    'full'
+    'default'
   );
 
-  // Retrieve the render array for the content field.
-  $content_value = field_view_field(
-    'field_collection_item',
-    $collection_entity,
-    $content_field_name,
-    'full'
-  );
+  if ('field' === $settings['content_options']['content_view_mode']) {
+
+    $content_field_name = $settings['content_options']['content_field'];
+
+    // Retrieve the render array for the content field.
+    $content_value = field_view_field(
+      'field_collection_item',
+      $collection_entity,
+      $content_field_name,
+      'default'
+    );
+
+  }
+  else {
+
+    $content_value = entity_view(
+      'field_collection_item',
+      array($collection_entity),
+      $settings['content_options']['content_view_mode'],
+      NULL,
+      TRUE
+    );
+  }
 
   // Strip HTML tags from content if necessary.
-  $content = ($settings['content_field_striptags']) ?
+  $content = ($settings['content_options']['content_field_striptags']) ?
     strip_tags(render($content_value)) : render($content_value);
 
   return array(
@@ -468,6 +526,22 @@ function quicktabs_field_collection_help($path, $arg) {
       $out .= '<p>' . t('In order to use this module you must select and configure the QuickTabs formatter on any field collection display. The only required options are the source of the tab label and body.') . '</p>';
       $out .= '<p>' . t('A text field as the source for the tab label is recommended. Any content used for the tab label will be run through <a href="@check-plain">check_plain()</a> before being displayed', array('@check-plain' => 'http://api.drupal.org/api/drupal/includes!bootstrap.inc/function/check_plain/7')) . '</p>';
       $out .= '<p>' . t('The source of the body content can be any type of field. The module was designed with a long text field in mind, but it will render anything that makes use of the Drupal render API. This means you can get complex data to render by using a field collection with other fields as the source of the tab body. Combining this with <a href="@ds">Display Suite</a> increases the flexibility of what the tabbed content can look like.', array('@ds' => 'http://drupal.org/project/ds')) . '</p>';
+      $out .= '<p>' . t('Another option for body content is a view mode of the field collection. If this option is selected then the field option is disabled as they are mutually exclusive.') . '</p>';
       return $out;
+  }
+}
+
+/**
+ * A field validate handler for the content field selection when the field view mode is chosen.
+ */
+function quicktabs_field_collection_validate_content_field($element, &$form_state, $form) {
+
+  $formatter_settings = $form_state['values']['fields'][$form_state['formatter_settings_edit']];
+  $formatter_settings = $formatter_settings['settings_edit_form']['settings'];
+  $is_field_view_mode = 'field' === $formatter_settings['content_options']['content_view_mode'];
+
+  if (empty($element['#value']) && $is_field_view_mode) {
+
+    form_error($element, t('A field must be chosen when the field view mode is selected.'));
   }
 }
