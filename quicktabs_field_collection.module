@@ -426,7 +426,7 @@ function theme_field_collection_quicktabs_formatter_field_collection_quicktabs($
     $settings['quicktabs']['options'] = $settings['quicktabs']['options'][$settings['quicktabs']['renderer']];
   }
 
-  $qt = quicktabs_build_quicktabs('field_collection_quicktabs', $settings['quicktabs'], $tabs);
+  $qt = quicktabs_build_quicktabs('field_collection_quicktabs-' . $collection_id, $settings['quicktabs'], $tabs);
 
   /*
    * The class is added here instead of to the QT options so it wraps the entire
